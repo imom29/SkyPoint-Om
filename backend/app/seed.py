@@ -5,6 +5,7 @@ Creates test users and sample job listings if they don't already exist.
 from app.database import SessionLocal
 from app.models.user import User, UserRole
 from app.models.job import Job, JobType
+from app.models.candidate_profile import CandidateProfile
 from app.services.auth_service import get_password_hash
 
 
@@ -109,6 +110,56 @@ def seed() -> None:
             print("  Created Candidate user: user@test.com")
         else:
             print("  Candidate user already exists, skipping.")
+
+        # --- Candidate profile ---
+        existing_profile = db.query(CandidateProfile).filter(CandidateProfile.user_id == candidate.id).first()
+        if not existing_profile:
+            profile = CandidateProfile(
+                user_id=candidate.id,
+                bio=(
+                    "Full-stack developer with 4 years of experience building web applications. "
+                    "Passionate about clean code, developer tooling, and open-source contributions."
+                ),
+                phone="+1 555 123 4567",
+                location="Austin, TX",
+                resume_url="https://example.com/test-candidate-resume.pdf",
+                linkedin_url="https://linkedin.com/in/test-candidate",
+                github_url="https://github.com/test-candidate",
+                years_of_experience=4,
+                skills=["Python", "React", "FastAPI", "PostgreSQL", "Docker", "TypeScript", "Git"],
+                experience=[
+                    {
+                        "company": "Acme Tech",
+                        "role": "Software Engineer",
+                        "start_year": 2022,
+                        "end_year": None,
+                        "description": "Building and maintaining REST APIs and React dashboards for enterprise clients.",
+                    },
+                    {
+                        "company": "StartupXYZ",
+                        "role": "Junior Developer",
+                        "start_year": 2020,
+                        "end_year": 2022,
+                        "description": "Developed internal tooling and contributed to the core product using Django and Vue.js.",
+                    },
+                ],
+                projects=[
+                    {
+                        "name": "DevTracker",
+                        "description": "An open-source project management tool built with FastAPI and React.",
+                        "url": "https://github.com/test-candidate/devtracker",
+                    },
+                    {
+                        "name": "QuickCV",
+                        "description": "A resume builder app that exports to PDF, used by 500+ developers.",
+                        "url": "https://quickcv.example.com",
+                    },
+                ],
+            )
+            db.add(profile)
+            print("  Created candidate profile for user@test.com")
+        else:
+            print("  Candidate profile already exists, skipping.")
 
         # --- Sample jobs (only if none exist) ---
         if db.query(Job).count() == 0:

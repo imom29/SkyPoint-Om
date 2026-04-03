@@ -2,7 +2,7 @@ import Badge from "../common/Badge";
 import { formatDate } from "../../utils/formatDate";
 import { APPLICATION_STATUSES, STATUS_LABELS } from "../../utils/constants";
 
-export default function ApplicationRow({ application, onStatusChange }) {
+export default function ApplicationRow({ application, onStatusChange, onViewProfile }) {
   const { candidate, cover_letter, resume_url, status, applied_at } = application;
 
   return (
@@ -10,6 +10,12 @@ export default function ApplicationRow({ application, onStatusChange }) {
       <td className="py-4 px-4">
         <p className="font-medium text-gray-900 text-sm">{candidate.full_name}</p>
         <p className="text-xs text-gray-500">{candidate.email}</p>
+        <button
+          onClick={() => onViewProfile(candidate)}
+          className="text-xs text-blue-600 hover:underline mt-0.5"
+        >
+          View Profile
+        </button>
       </td>
       <td className="py-4 px-4 text-xs text-gray-500">{formatDate(applied_at)}</td>
       <td className="py-4 px-4 max-w-xs">

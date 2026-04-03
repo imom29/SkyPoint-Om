@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { getJob } from "../../api/jobsApi";
 import { applyToJob } from "../../api/applicationsApi";
+import { getProfile } from "../../api/profileApi";
 import { useAuth } from "../../hooks/useAuth";
 import Badge from "../../components/common/Badge";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
@@ -22,7 +23,9 @@ export default function JobDetailPage() {
   const [applyError, setApplyError] = useState("");
   const [showForm, setShowForm] = useState(false);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+  const [profileResumeUrl, setProfileResumeUrl] = useState("");
+
+  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue } = useForm();
 
   useEffect(() => {
     async function fetchJob() {
@@ -37,6 +40,19 @@ export default function JobDetailPage() {
     }
     fetchJob();
   }, [jobId]);
+
+  // Pre-fill resume URL from profile when candidate opens the apply form
+  useEffect(() => {
+    if (isAuthenticated && user?.role === "candidate") {
+      getProfile()
+        .then((p) => {
+          if (p.resume_url) {
+            setProfileResumeUrl(p.resume_url);
+          }
+        })
+        .catch(() => {}); // non-critical — silently ignore
+    }
+  }, [isAuthenticated, user]);
 
   async function onApply({ cover_letter, resume_url, resume_text }) {
     setApplyError("");
@@ -96,7 +112,10 @@ export default function JobDetailPage() {
 
           {isCandidate && !applied && !showForm && (
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => {
+                setShowForm(true);
+                if (profileResumeUrl) setValue("resume_url", profileResumeUrl);
+              }}
               className="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700"
             >
               Apply Now
@@ -136,6 +155,9 @@ export default function JobDetailPage() {
                     placeholder="https://your-resume-link.com"
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                  {profileResumeUrl && (
+                    <p className="text-xs text-gray-400 mt-1">Pre-filled from your profile.</p>
+                  )}
                 </div>
 
                 <div>

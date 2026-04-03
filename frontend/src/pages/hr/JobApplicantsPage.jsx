@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { getJob } from "../../api/jobsApi";
 import { getJobApplications, updateApplicationStatus } from "../../api/applicationsApi";
 import ApplicationRow from "../../components/applications/ApplicationRow";
+import CandidateProfileModal from "../../components/applications/CandidateProfileModal";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import PageWrapper from "../../components/layout/PageWrapper";
@@ -15,6 +16,7 @@ export default function JobApplicantsPage() {
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -98,13 +100,24 @@ export default function JobApplicantsPage() {
                 </thead>
                 <tbody>
                   {filtered.map((app) => (
-                    <ApplicationRow key={app.id} application={app} onStatusChange={handleStatusChange} />
+                    <ApplicationRow
+                      key={app.id}
+                      application={app}
+                      onStatusChange={handleStatusChange}
+                      onViewProfile={setSelectedCandidate}
+                    />
                   ))}
                 </tbody>
               </table>
             </div>
           )}
         </>
+      )}
+      {selectedCandidate && (
+        <CandidateProfileModal
+          candidate={selectedCandidate}
+          onClose={() => setSelectedCandidate(null)}
+        />
       )}
     </PageWrapper>
   );
