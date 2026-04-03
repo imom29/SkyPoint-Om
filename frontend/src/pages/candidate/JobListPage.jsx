@@ -1,18 +1,34 @@
 import { useState, useEffect } from "react";
 import { getJobs } from "../../api/jobsApi";
+import { getMyApplications } from "../../api/applicationsApi";
+import { useAuth } from "../../hooks/useAuth";
 import { useDebounce } from "../../hooks/useDebounce";
 import JobCard from "../../components/jobs/JobCard";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import Pagination from "../../components/common/Pagination";
 
 export default function JobListPage() {
+  const { isAuthenticated, user } = useAuth();
   const [filters, setFilters] = useState({ title: "", location: "", job_type: "" });
   const [page, setPage] = useState(1);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [appliedJobIds, setAppliedJobIds] = useState(new Set());
 
   const debouncedFilters = useDebounce(filters, 400);
+
+  // Fetch applied job IDs for candidates
+  useEffect(() => {
+    if (isAuthenticated && user?.role === "candidate") {
+      getMyApplications()
+        .then((res) => {
+          const ids = new Set(res.items?.map((app) => String(app.job.id)) || []);
+          setAppliedJobIds(ids);
+        })
+        .catch(() => {});
+    }
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     setPage(1);
@@ -122,7 +138,7 @@ export default function JobListPage() {
         {/* Job list */}
         <div className="space-y-3">
           {!loading && result?.items?.map((job) => (
-            <JobCard key={job.id} job={job} />
+            <JobCard key={job.id} job={job} applied={appliedJobIds.has(String(job.id))} />
           ))}
         </div>
 

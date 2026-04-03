@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { getJob } from "../../api/jobsApi";
-import { applyToJob } from "../../api/applicationsApi";
+import { applyToJob, getMyApplications } from "../../api/applicationsApi";
 import { useAuth } from "../../hooks/useAuth";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import ErrorMessage from "../../components/common/ErrorMessage";
@@ -25,6 +25,19 @@ export default function JobDetailPage() {
       try {
         const data = await getJob(jobId);
         setJob(data);
+
+        // Check if the candidate has already applied
+        if (isAuthenticated && user?.role === "candidate") {
+          try {
+            const apps = await getMyApplications();
+            const alreadyApplied = apps.items?.some(
+              (app) => String(app.job.id) === String(jobId)
+            );
+            if (alreadyApplied) setApplied(true);
+          } catch {
+            // non-critical — silently ignore
+          }
+        }
       } catch {
         setError("Job not found.");
       } finally {
@@ -32,7 +45,7 @@ export default function JobDetailPage() {
       }
     }
     fetchJob();
-  }, [jobId]);
+  }, [jobId, isAuthenticated, user]);
 
   async function onApply({ cover_letter, resume_url, resume_text }) {
     setApplyError("");

@@ -10,7 +10,7 @@ const TYPE_BADGE_COLORS = {
   internship: "bg-tertiary-fixed-dim/60 text-on-tertiary-fixed-variant",
 };
 
-export default function JobCard({ job }) {
+export default function JobCard({ job, applied }) {
   const salary = formatSalary(job.salary_min, job.salary_max);
   const badgeColor = TYPE_BADGE_COLORS[job.job_type] || "bg-surface-container-high text-on-surface-variant";
 
@@ -50,12 +50,19 @@ export default function JobCard({ job }) {
       </div>
 
       {/* Right: button */}
-      <Link
-        to={`/jobs/${job.id}`}
-        className="bg-primary text-white px-5 py-2 rounded-lg font-semibold text-xs hover:bg-primary-container transition-colors whitespace-nowrap flex-shrink-0"
-      >
-        Apply Now
-      </Link>
+      {applied ? (
+        <span className="bg-surface-container-high text-on-surface-variant px-5 py-2 rounded-lg font-semibold text-xs whitespace-nowrap flex-shrink-0 flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[14px]">check_circle</span>{" "}
+          Applied
+        </span>
+      ) : (
+        <Link
+          to={`/jobs/${job.id}`}
+          className="bg-primary text-white px-5 py-2 rounded-lg font-semibold text-xs hover:bg-primary-container transition-colors whitespace-nowrap flex-shrink-0"
+        >
+          Apply Now
+        </Link>
+      )}
     </div>
   );
 }
@@ -70,6 +77,11 @@ JobCard.propTypes = {
     salary_max: PropTypes.number,
     created_at: PropTypes.string.isRequired,
   }).isRequired,
+  applied: PropTypes.bool,
+};
+
+JobCard.defaultProps = {
+  applied: false,
 };
 
 
