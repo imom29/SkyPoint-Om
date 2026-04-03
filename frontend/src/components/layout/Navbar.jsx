@@ -1,74 +1,84 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // HR users have their own sidebar layout — no top navbar needed
+  if (isAuthenticated && user?.role === "hr") return null;
 
   function handleLogout() {
     logout();
     navigate("/login");
   }
 
+  function isActive(to) {
+    return location.pathname === to || (to !== "/" && location.pathname.startsWith(to));
+  }
+
+  const linkBase = "text-sm font-medium transition-colors";
+  const linkActive = "text-primary border-b-2 border-primary pb-0.5";
+  const linkInactive = "text-on-surface-variant hover:text-on-surface";
+
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link to="/" className="text-xl font-bold text-blue-600 tracking-tight">
+    <nav className="sticky top-0 z-40 bg-surface-container-lowest border-b border-outline-variant/10">
+      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+        {/* Logo */}
+        <Link to="/" className="text-lg font-black tracking-tight text-primary flex-shrink-0">
           SkyPoint
         </Link>
 
-        <div className="flex items-center gap-4">
-          {!isAuthenticated && (
-            <>
-              <Link to="/jobs" className="text-sm text-gray-600 hover:text-gray-900">
-                Browse Jobs
-              </Link>
-              <Link to="/login" className="text-sm text-gray-600 hover:text-gray-900">
-                Login
-              </Link>
-              <Link
-                to="/register"
-                className="text-sm bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700"
-              >
-                Sign up
-              </Link>
-            </>
-          )}
-
+        {/* Nav links */}
+        <div className="flex items-center gap-6">
           {isAuthenticated && user?.role === "candidate" && (
             <>
-              <Link to="/jobs" className="text-sm text-gray-600 hover:text-gray-900">
-                Browse Jobs
+              <Link to="/jobs" className={`${linkBase} ${isActive("/jobs") ? linkActive : linkInactive}`}>
+                Jobs
               </Link>
-              <Link to="/my-applications" className="text-sm text-gray-600 hover:text-gray-900">
+              <Link to="/my-applications" className={`${linkBase} ${isActive("/my-applications") ? linkActive : linkInactive}`}>
                 My Applications
               </Link>
             </>
           )}
 
-          {isAuthenticated && user?.role === "hr" && (
-            <>
-              <Link to="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
-                Dashboard
-              </Link>
-              <Link to="/jobs/create" className="text-sm text-gray-600 hover:text-gray-900">
-                Post a Job
-              </Link>
-            </>
+          {!isAuthenticated && (
+            <Link to="/jobs" className={`${linkBase} ${isActive("/jobs") ? linkActive : linkInactive}`}>
+              Jobs
+            </Link>
           )}
+        </div>
 
-          {isAuthenticated && (
-            <div className="flex items-center gap-3 pl-2 border-l border-gray-200">
-              <Link to="/profile" className="text-sm text-gray-700 hover:text-gray-900 font-medium">
-                {user?.full_name}
+        {/* Right side */}
+        <div className="flex items-center gap-3">
+          {isAuthenticated ? (
+            <>
+              <Link
+                to="/profile"
+                className={`${linkBase} ${isActive("/profile") ? linkActive : linkInactive}`}
+              >
+                Profile
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-sm text-gray-500 hover:text-red-600"
+                className="bg-primary text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-primary-container transition-colors"
               >
                 Logout
               </button>
-            </div>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className={`${linkBase} ${linkInactive}`}>
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="bg-primary text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-primary-container transition-colors"
+              >
+                Sign up
+              </Link>
+            </>
           )}
         </div>
       </div>

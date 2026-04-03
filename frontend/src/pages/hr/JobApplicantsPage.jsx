@@ -6,7 +6,7 @@ import ApplicationRow from "../../components/applications/ApplicationRow";
 import CandidateProfileModal from "../../components/applications/CandidateProfileModal";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import ErrorMessage from "../../components/common/ErrorMessage";
-import PageWrapper from "../../components/layout/PageWrapper";
+import HRLayout from "../../components/layout/HRLayout";
 import { APPLICATION_STATUSES } from "../../utils/constants";
 
 export default function JobApplicantsPage() {
@@ -53,13 +53,50 @@ export default function JobApplicantsPage() {
   ) ?? [];
 
   return (
-    <PageWrapper>
-      <Link to="/dashboard" className="text-sm text-blue-600 hover:underline mb-6 block">&larr; Back to dashboard</Link>
+    <HRLayout>
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm text-on-surface-variant mb-6">
+        <Link to="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
+        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span>Jobs</span>
+        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span className="text-on-surface font-medium">Applicants</span>
+      </nav>
 
       {job && (
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
-          <p className="text-sm text-gray-500 mt-1">{job.location} · {data?.total ?? 0} applicant{data?.total !== 1 ? "s" : ""}</p>
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-on-surface">{job.title}</h1>
+            <div className="flex items-center gap-3 mt-1.5 text-sm text-on-surface-variant">
+              <span className="flex items-center gap-1">
+                <span className="material-symbols-outlined text-[16px]">location_on</span>
+                {job.location}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="material-symbols-outlined text-[16px]">group</span>
+                {data?.total ?? 0} Applicant{data?.total === 1 ? "" : "s"}
+              </span>
+            </div>
+          </div>
+
+          {/* Filter tabs */}
+          {data && (
+            <div className="flex gap-1 bg-surface-container-low rounded-xl p-1">
+              {["all", ...APPLICATION_STATUSES.map((s) => s.value)].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setFilter(s)}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
+                    filter === s
+                      ? "bg-surface-container-lowest text-on-surface shadow-sm"
+                      : "text-on-surface-variant hover:text-on-surface"
+                  }`}
+                >
+                  {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -68,34 +105,20 @@ export default function JobApplicantsPage() {
 
       {!loading && data && (
         <>
-          {/* Status filter tabs */}
-          <div className="flex gap-2 mb-4">
-            {["all", ...APPLICATION_STATUSES.map((s) => s.value)].map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilter(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
-                  filter === s
-                    ? "bg-blue-600 text-white"
-                    : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                {s === "all" ? `All (${data.total})` : `${s} (${data.items.filter((a) => a.status === s).length})`}
-              </button>
-            ))}
-          </div>
-
           {filtered.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">No applications in this category.</div>
+            <div className="text-center py-16 text-on-surface-variant bg-surface-container-lowest rounded-xl border border-outline-variant/10">
+              No applications in this category.
+            </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-surface-container-low border-b border-outline-variant/10">
                   <tr>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500">Candidate</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500">Applied</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500">Cover Letter / Resume</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
+                    <th className="text-left py-3 px-6 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Candidate</th>
+                    <th className="text-left py-3 px-6 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Applied Date</th>
+                    <th className="text-left py-3 px-6 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Cover Letter</th>
+                    <th className="text-left py-3 px-6 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Resume</th>
+                    <th className="text-left py-3 px-6 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -109,16 +132,22 @@ export default function JobApplicantsPage() {
                   ))}
                 </tbody>
               </table>
+
+              {/* Pagination footer */}
+              <div className="px-6 py-3 border-t border-outline-variant/10">
+                <p className="text-xs text-on-surface-variant">Page 1 of {Math.ceil((data?.total || 1) / 10)}</p>
+              </div>
             </div>
           )}
         </>
       )}
+
       {selectedCandidate && (
         <CandidateProfileModal
           candidate={selectedCandidate}
           onClose={() => setSelectedCandidate(null)}
         />
       )}
-    </PageWrapper>
+    </HRLayout>
   );
 }

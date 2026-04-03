@@ -1,11 +1,11 @@
 import uuid
 import math
 from typing import Optional
-from sqlalchemy import func, select
+from sqlalchemy import func, select, case
 from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 from app.models.job import Job
-from app.models.application import Application
+from app.models.application import Application, ApplicationStatus
 from app.models.user import User
 from app.schemas.job import JobCreate, JobUpdate
 
@@ -15,19 +15,29 @@ def _base_query(db: Session):
 
 
 def _with_app_count(jobs: list[Job], db: Session) -> list[Job]:
-    """Attach application_count as a dynamic attribute to each job."""
+    """Attach application_count and per-status counts as dynamic attributes to each job."""
     if not jobs:
         return jobs
     job_ids = [j.id for j in jobs]
-    counts = (
-        db.query(Application.job_id, func.count(Application.id).label("cnt"))
+    rows = (
+        db.query(
+            Application.job_id,
+            func.count(Application.id).label("total"),
+            func.count(case((Application.status == ApplicationStatus.pending, 1))).label("pending"),
+            func.count(case((Application.status == ApplicationStatus.accepted, 1))).label("accepted"),
+            func.count(case((Application.status == ApplicationStatus.rejected, 1))).label("rejected"),
+        )
         .filter(Application.job_id.in_(job_ids))
         .group_by(Application.job_id)
         .all()
     )
-    count_map = {row.job_id: row.cnt for row in counts}
+    row_map = {row.job_id: row for row in rows}
     for job in jobs:
-        job.application_count = count_map.get(job.id, 0)  # type: ignore[attr-defined]
+        row = row_map.get(job.id)
+        job.application_count = row.total if row else 0  # type: ignore[attr-defined]
+        job.pending_count = row.pending if row else 0  # type: ignore[attr-defined]
+        job.accepted_count = row.accepted if row else 0  # type: ignore[attr-defined]
+        job.rejected_count = row.rejected if row else 0  # type: ignore[attr-defined]
     return jobs
 
 

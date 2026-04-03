@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { createJob } from "../../api/jobsApi";
 import JobForm from "../../components/jobs/JobForm";
 import ErrorMessage from "../../components/common/ErrorMessage";
-import PageWrapper from "../../components/layout/PageWrapper";
+import HRLayout from "../../components/layout/HRLayout";
 
 export default function CreateJobPage() {
   const navigate = useNavigate();
@@ -29,17 +29,22 @@ export default function CreateJobPage() {
   }
 
   return (
-    <PageWrapper>
+    <HRLayout>
       <div className="max-w-2xl">
-        <Link to="/dashboard" className="text-sm text-blue-600 hover:underline mb-6 block">&larr; Back to dashboard</Link>
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Post a New Job</h1>
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <ErrorMessage message={error} />
-          <div className={error ? "mt-4" : ""}>
-            <JobForm onSubmit={handleSubmit} isSubmitting={isSubmitting} submitLabel="Post Job" />
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-on-surface">Post New Job</h1>
+            <p className="text-on-surface-variant text-sm mt-1">Fill in the details for your new job posting.</p>
           </div>
+          <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
+            ● New Posting
+          </span>
         </div>
+
+        <ErrorMessage message={error} />
+
+        <JobForm onSubmit={handleSubmit} isSubmitting={isSubmitting} submitLabel="Post Job" />
       </div>
-    </PageWrapper>
+    </HRLayout>
   );
 }

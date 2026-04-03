@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
+import PropTypes from "prop-types";
 import { useAuth } from "../../hooks/useAuth";
 import { getProfile, updateProfile } from "../../api/profileApi";
-import PageWrapper from "../../components/layout/PageWrapper";
-import Badge from "../../components/common/Badge";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import ErrorMessage from "../../components/common/ErrorMessage";
 
@@ -12,48 +11,44 @@ export default function ProfilePage() {
   const isCandidate = user?.role === "candidate";
 
   return (
-    <PageWrapper>
-      <div className="max-w-3xl">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">My Profile</h1>
-
-        {/* Account card — same for both roles */}
-        <AccountCard user={user} />
-
-        {/* Extended profile — candidates only */}
-        {isCandidate && <CandidateProfileSection />}
-      </div>
-    </PageWrapper>
-  );
-}
-
-/* ── Account card (read-only) ─────────────────────────────── */
-function AccountCard({ user }) {
-  return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-      <div className="flex items-center gap-4 pb-4 border-b border-gray-100 mb-4">
-        <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl font-bold select-none">
-          {user?.full_name?.[0]?.toUpperCase()}
+    <div className="min-h-screen bg-surface-container">
+      <main className="max-w-5xl mx-auto px-6 py-8">
+        {/* Page header */}
+        <div className="flex items-start justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center text-primary text-2xl font-black select-none shadow-ambient-sm">
+              {user?.full_name?.[0]?.toUpperCase()}
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-on-surface">{user?.full_name}</h1>
+              <p className="text-sm text-on-surface-variant mt-0.5">
+                {user?.role === "hr" ? "Recruiter / HR" : "Job Seeker"}{" "}
+                <span className="text-outline">·</span>{" "}
+                {user?.email}
+              </p>
+            </div>
+          </div>
         </div>
-        <div>
-          <p className="font-semibold text-gray-900 text-lg">{user?.full_name}</p>
-          <Badge value={user?.role} label={user?.role === "hr" ? "Recruiter / HR" : "Job Seeker"} />
-        </div>
-      </div>
-      <div className="space-y-1 text-sm">
-        <InfoRow label="Email" value={user?.email} />
-        <InfoRow label="Role" value={user?.role === "hr" ? "Recruiter / HR" : "Candidate"} />
-      </div>
+
+        {/* Content */}
+        {isCandidate ? (
+          <CandidateProfileSection user={user} />
+        ) : (
+          <HRProfileSection user={user} />
+        )}
+      </main>
     </div>
   );
 }
 
-/* ── Candidate extended profile ───────────────────────────── */
-function CandidateProfileSection() {
+/* ══════════════════════════════════════════════════════════
+   CANDIDATE PROFILE — two-column layout
+══════════════════════════════════════════════════════════ */
+function CandidateProfileSection({ user }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
-  const [saveError, setSaveError] = useState("");
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -74,28 +69,33 @@ function CandidateProfileSection() {
   if (error) return <ErrorMessage message={error} />;
 
   return (
-    <div className="space-y-6">
+    <div>
       {saved && (
-        <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 font-medium">
-          Profile saved successfully.
+        <div className="bg-tertiary-fixed-dim/30 border border-on-tertiary-fixed-variant/20 rounded-xl px-4 py-3 text-sm text-on-surface font-medium mb-6 flex items-center gap-2">
+          <span className="material-symbols-outlined text-[18px]">check_circle</span>
+          {" "}Profile saved successfully.
         </div>
       )}
 
       {editing ? (
-        <ProfileEditForm
-          profile={profile}
-          onSaved={handleSaved}
-          onCancel={() => setEditing(false)}
-        />
+        <ProfileEditForm profile={profile} onSaved={handleSaved} onCancel={() => setEditing(false)} />
       ) : (
-        <ProfileView profile={profile} onEdit={() => setEditing(true)} />
+        <ProfileView profile={profile} user={user} onEdit={() => setEditing(true)} />
       )}
     </div>
   );
 }
 
-/* ── Read-only view ───────────────────────────────────────── */
-function ProfileView({ profile, onEdit }) {
+CandidateProfileSection.propTypes = {
+  user: PropTypes.shape({ full_name: PropTypes.string, email: PropTypes.string }).isRequired,
+};
+
+/* ── Read-only two-column view ───────────────────────────── */
+function ProfileView({ profile, user, onEdit }) {
+  const yrs = profile.years_of_experience;
+  const yrSuffix = yrs === 1 ? "" : "s";
+  const yearsLabel = yrs == null ? null : `${yrs} yr${yrSuffix}`;
+
   const isEmpty =
     !profile.bio &&
     !profile.resume_url &&
@@ -104,101 +104,280 @@ function ProfileView({ profile, onEdit }) {
     !(profile.experience?.length) &&
     !(profile.projects?.length);
 
-  return (
-    <div className="space-y-4">
-      {isEmpty && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
-          Your profile is empty.{" "}
-          <button onClick={onEdit} className="font-medium underline">
-            Add your details
-          </button>{" "}
-          to stand out to recruiters.
-        </div>
-      )}
+  if (isEmpty) {
+    return (
+      <div className="bg-secondary-container/60 border border-outline-variant/20 rounded-xl px-6 py-8 text-center">
+        <span className="material-symbols-outlined text-4xl text-primary mb-3 block">person_add</span>
+        <p className="text-sm text-on-surface font-medium mb-2">Your profile is empty.</p>
+        <p className="text-xs text-on-surface-variant mb-4">Add your details to stand out to recruiters.</p>
+        <button
+          onClick={onEdit}
+          className="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-container transition-colors"
+        >
+          Build Profile
+        </button>
+      </div>
+    );
+  }
 
-      {/* About */}
-      <Section title="About" onEdit={onEdit}>
-        <div className="space-y-0 text-sm">
-          {profile.bio && (
-            <div className="py-2 border-b border-gray-50">
-              <p className="text-gray-500 mb-1">Bio</p>
-              <p className="text-gray-900">{profile.bio}</p>
+  return (
+    <div className="flex gap-6 items-start">
+      {/* ── LEFT COLUMN ── */}
+      <div className="w-72 flex-shrink-0 space-y-4">
+        {/* Bio card */}
+        {profile.bio && (
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Professional Bio</p>
+              <button onClick={onEdit} className="text-primary" title="Edit">
+                <span className="material-symbols-outlined text-[18px]">edit</span>
+              </button>
             </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2">
-            <InfoRow label="Phone" value={profile.phone} />
-            <InfoRow label="Location" value={profile.location} />
-            <InfoRow label="Years of experience" value={profile.years_of_experience != null ? `${profile.years_of_experience} yr${profile.years_of_experience !== 1 ? "s" : ""}` : null} />
-            <InfoRow label="Resume" value={profile.resume_url ? <a href={profile.resume_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{profile.resume_url}</a> : null} />
-            <InfoRow label="LinkedIn" value={profile.linkedin_url ? <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{profile.linkedin_url}</a> : null} />
-            <InfoRow label="GitHub" value={profile.github_url ? <a href={profile.github_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{profile.github_url}</a> : null} />
+            <p className="text-sm text-on-surface leading-relaxed">{profile.bio}</p>
+          </div>
+        )}
+
+        {/* Contact & Details card */}
+        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Contact &amp; Details</p>
+            <button onClick={onEdit} className="text-primary" title="Edit">
+              <span className="material-symbols-outlined text-[18px]">edit</span>
+            </button>
+          </div>
+          <div className="space-y-3">
+            <ContactRow icon="mail" label="Email" value={user?.email} />
+            {profile.phone && <ContactRow icon="call" label="Phone" value={profile.phone} />}
+            {profile.location && <ContactRow icon="location_on" label="Location" value={profile.location} />}
+            {yearsLabel && <ContactRow icon="work_history" label="Experience" value={yearsLabel} />}
+            {profile.resume_url && (
+              <ContactRow
+                icon="attachment"
+                label="Resume"
+                value={
+                  <a href={profile.resume_url} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all text-xs">
+                    View Resume ↗
+                  </a>
+                }
+              />
+            )}
           </div>
         </div>
 
+        {/* Socials card */}
+        {(profile.linkedin_url || profile.github_url) && (
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Socials</p>
+              <button onClick={onEdit} className="text-primary" title="Edit">
+                <span className="material-symbols-outlined text-[18px]">edit</span>
+              </button>
+            </div>
+            <div className="space-y-2">
+              {profile.linkedin_url && (
+                <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-on-surface-variant hover:text-primary transition-colors">
+                  <span className="material-symbols-outlined text-[16px]">link</span>{" "}
+                  LinkedIn
+                </a>
+              )}
+              {profile.github_url && (
+                <a href={profile.github_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-on-surface-variant hover:text-primary transition-colors">
+                  <span className="material-symbols-outlined text-[16px]">code</span>{" "}
+                  GitHub
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Skills card */}
         {profile.skills?.length > 0 && (
-          <div className="mt-4">
-            <p className="text-xs font-medium text-gray-500 mb-2">Skills</p>
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Core Skills</p>
+              <button onClick={onEdit} className="text-primary" title="Edit">
+                <span className="material-symbols-outlined text-[18px]">settings</span>
+              </button>
+            </div>
             <div className="flex flex-wrap gap-2">
               {profile.skills.map((s, i) => (
-                <span key={i} className="bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full">
+                <span key={`${s}-${i}`} className="bg-primary/10 text-primary text-xs font-semibold px-2.5 py-1 rounded-full">
                   {s}
                 </span>
               ))}
             </div>
           </div>
         )}
-      </Section>
+      </div>
 
-      {/* Experience */}
-      {profile.experience?.length > 0 && (
-        <Section title="Work Experience" onEdit={onEdit}>
-          <div className="space-y-4">
-            {profile.experience.map((exp, i) => (
-              <div key={i} className="border-l-2 border-blue-200 pl-4">
-                <p className="font-medium text-gray-900 text-sm">{exp.role}</p>
-                <p className="text-sm text-gray-600">{exp.company}</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {exp.start_year} — {exp.end_year ?? "Present"}
-                </p>
-                {exp.description && <p className="text-sm text-gray-600 mt-1">{exp.description}</p>}
-              </div>
-            ))}
+      {/* ── RIGHT COLUMN ── */}
+      <div className="flex-1 min-w-0 space-y-4">
+        {/* Work Experience timeline */}
+        {profile.experience?.length > 0 && (
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-5">
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Work Experience</p>
+              <button onClick={onEdit} className="text-primary" title="Edit">
+                <span className="material-symbols-outlined text-[18px]">edit</span>
+              </button>
+            </div>
+            <div className="space-y-5">
+              {profile.experience.map((exp, i) => {
+                const isCurrent = !exp.end_year;
+                return (
+                  <div key={`${exp.company}-${exp.role}-${exp.start_year}-${i}`} className="flex gap-4">
+                    <div className="flex flex-col items-center mt-1">
+                      <div className={`w-3 h-3 rounded-full border-2 ${isCurrent ? "bg-primary border-primary" : "bg-transparent border-outline-variant"}`} />
+                      {i < profile.experience.length - 1 && (
+                        <div className="w-px flex-1 bg-outline-variant/30 mt-1" style={{ minHeight: "2rem" }} />
+                      )}
+                    </div>
+                    <div className="flex-1 pb-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-on-surface text-sm">{exp.role}</p>
+                        {isCurrent && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-2 py-0.5 rounded-full">Present</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-on-surface-variant mt-0.5">{exp.company}</p>
+                      <p className="text-xs text-outline mt-0.5">
+                        {exp.start_year} — {exp.end_year ?? "Present"}
+                      </p>
+                      {exp.description && (
+                        <p className="text-xs text-on-surface-variant mt-1.5 leading-relaxed">{exp.description}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </Section>
-      )}
+        )}
 
-      {/* Projects */}
-      {profile.projects?.length > 0 && (
-        <Section title="Projects" onEdit={onEdit}>
-          <div className="space-y-4">
-            {profile.projects.map((proj, i) => (
-              <div key={i}>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-900 text-sm">{proj.name}</p>
-                  {proj.url && (
-                    <a href={proj.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
-                      Link ↗
-                    </a>
+        {/* Projects grid */}
+        {profile.projects?.length > 0 && (
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-5">
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Selected Projects</p>
+              <button onClick={onEdit} className="text-primary" title="Edit">
+                <span className="material-symbols-outlined text-[18px]">edit</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {profile.projects.map((proj, i) => (
+                <div key={`${proj.name}-${i}`} className="border border-outline-variant/20 rounded-xl p-4 hover:border-primary/30 transition-colors">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <p className="font-semibold text-on-surface text-sm">{proj.name}</p>
+                    {proj.url && (
+                      <a href={proj.url} target="_blank" rel="noopener noreferrer" className="text-primary flex-shrink-0">
+                        <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                      </a>
+                    )}
+                  </div>
+                  {proj.description && (
+                    <p className="text-xs text-on-surface-variant leading-relaxed">{proj.description}</p>
                   )}
                 </div>
-                {proj.description && <p className="text-sm text-gray-600 mt-0.5">{proj.description}</p>}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </Section>
-      )}
+        )}
 
-      {!isEmpty && (
         <button
           onClick={onEdit}
-          className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
+          className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-container transition-colors"
         >
+          <span className="material-symbols-outlined text-[18px]">edit</span>{" "}
           Edit Profile
         </button>
-      )}
+      </div>
     </div>
   );
 }
+
+ProfileView.propTypes = {
+  profile: PropTypes.shape({
+    bio: PropTypes.string,
+    phone: PropTypes.string,
+    location: PropTypes.string,
+    years_of_experience: PropTypes.number,
+    resume_url: PropTypes.string,
+    linkedin_url: PropTypes.string,
+    github_url: PropTypes.string,
+    skills: PropTypes.arrayOf(PropTypes.string),
+    experience: PropTypes.arrayOf(
+      PropTypes.shape({
+        role: PropTypes.string,
+        company: PropTypes.string,
+        start_year: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        end_year: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        description: PropTypes.string,
+      })
+    ),
+    projects: PropTypes.arrayOf(
+      PropTypes.shape({
+        name: PropTypes.string,
+        url: PropTypes.string,
+        description: PropTypes.string,
+      })
+    ),
+  }).isRequired,
+  user: PropTypes.shape({ email: PropTypes.string }),
+  onEdit: PropTypes.func.isRequired,
+};
+
+ProfileView.defaultProps = { user: null };
+
+/* ── Contact row helper ──────────────────────────────────── */
+function ContactRow({ icon, label, value }) {
+  if (!value && value !== 0) return null;
+  return (
+    <div className="flex items-start gap-2">
+      <span className="material-symbols-outlined text-on-surface-variant text-[16px] mt-0.5 flex-shrink-0">{icon}</span>
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{label}</p>
+        <div className="text-xs text-on-surface mt-0.5">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+ContactRow.propTypes = {
+  icon: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.node]),
+};
+
+ContactRow.defaultProps = { value: null };
+
+/* ══════════════════════════════════════════════════════════
+   HR PROFILE — simple info card
+══════════════════════════════════════════════════════════ */
+function HRProfileSection({ user }) {
+  return (
+    <div className="max-w-xl">
+      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-6 space-y-3">
+        <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-4">Account Details</p>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="material-symbols-outlined text-on-surface-variant text-[16px]">mail</span>
+          <span className="text-on-surface-variant">Email:</span>
+          <span className="text-on-surface font-medium">{user?.email}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="material-symbols-outlined text-on-surface-variant text-[16px]">badge</span>
+          <span className="text-on-surface-variant">Role:</span>
+          <span className="text-on-surface font-medium">Recruiter / HR</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+HRProfileSection.propTypes = {
+  user: PropTypes.shape({ email: PropTypes.string, full_name: PropTypes.string }),
+};
+
+HRProfileSection.defaultProps = { user: null };
 
 /* ── Edit form ────────────────────────────────────────────── */
 function ProfileEditForm({ profile, onSaved, onCancel }) {
@@ -269,7 +448,7 @@ function ProfileEditForm({ profile, onSaved, onCancel }) {
       resume_url: values.resume_url || null,
       linkedin_url: values.linkedin_url || null,
       github_url: values.github_url || null,
-      years_of_experience: values.years_of_experience !== "" ? Number(values.years_of_experience) : null,
+      years_of_experience: values.years_of_experience === "" ? null : Number(values.years_of_experience),
       skills,
       experience,
       projects,
@@ -331,7 +510,7 @@ function ProfileEditForm({ profile, onSaved, onCancel }) {
             <input {...register("github_url")} placeholder="https://github.com/you" className={input()} />
           </div>
           <div className="sm:col-span-2">
-            <Label>Skills <span className="text-gray-400 font-normal">(comma-separated)</span></Label>
+            <Label>Skills <span className="text-outline font-normal">(comma-separated)</span></Label>
             <input
               {...register("skillsRaw")}
               placeholder="e.g. Python, React, Docker, PostgreSQL"
@@ -345,11 +524,11 @@ function ProfileEditForm({ profile, onSaved, onCancel }) {
       <FormSection title="Work Experience">
         <div className="space-y-4">
           {expFields.map((field, i) => (
-            <div key={field.id} className="border border-gray-200 rounded-xl p-4 relative">
+            <div key={field.id} className="border border-outline-variant/20 bg-surface-container-low rounded-xl p-4 relative">
               <button
                 type="button"
                 onClick={() => removeExp(i)}
-                className="absolute top-3 right-3 text-xs text-red-400 hover:text-red-600"
+                className="absolute top-3 right-3 text-xs text-error hover:opacity-80"
               >
                 Remove
               </button>
@@ -367,7 +546,7 @@ function ProfileEditForm({ profile, onSaved, onCancel }) {
                   <input type="number" {...register(`experience.${i}.start_year`)} placeholder="2021" className={input()} />
                 </div>
                 <div>
-                  <Label>End Year <span className="text-gray-400 font-normal">(leave blank if current)</span></Label>
+                  <Label>End Year <span className="text-outline font-normal">(leave blank if current)</span></Label>
                   <input type="number" {...register(`experience.${i}.end_year`)} placeholder="2024" className={input()} />
                 </div>
                 <div className="sm:col-span-2">
@@ -385,7 +564,7 @@ function ProfileEditForm({ profile, onSaved, onCancel }) {
           <button
             type="button"
             onClick={() => appendExp({ company: "", role: "", start_year: "", end_year: "", description: "" })}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="text-sm text-primary hover:text-primary-container font-medium"
           >
             + Add experience
           </button>
@@ -396,11 +575,11 @@ function ProfileEditForm({ profile, onSaved, onCancel }) {
       <FormSection title="Projects">
         <div className="space-y-4">
           {projFields.map((field, i) => (
-            <div key={field.id} className="border border-gray-200 rounded-xl p-4 relative">
+            <div key={field.id} className="border border-outline-variant/20 bg-surface-container-low rounded-xl p-4 relative">
               <button
                 type="button"
                 onClick={() => removeProj(i)}
-                className="absolute top-3 right-3 text-xs text-red-400 hover:text-red-600"
+                className="absolute top-3 right-3 text-xs text-error hover:opacity-80"
               >
                 Remove
               </button>
@@ -428,7 +607,7 @@ function ProfileEditForm({ profile, onSaved, onCancel }) {
           <button
             type="button"
             onClick={() => appendProj({ name: "", description: "", url: "" })}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="text-sm text-primary hover:text-primary-container font-medium"
           >
             + Add project
           </button>
@@ -440,14 +619,14 @@ function ProfileEditForm({ profile, onSaved, onCancel }) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          className="bg-primary-container text-on-primary px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary transition-colors disabled:opacity-50"
         >
           {isSubmitting ? "Saving..." : "Save Profile"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-6 py-2.5 rounded-lg text-sm border border-gray-300 text-gray-600 hover:bg-gray-50"
+          className="px-6 py-2.5 rounded-xl text-sm border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-low"
         >
           Cancel
         </button>
@@ -459,10 +638,10 @@ function ProfileEditForm({ profile, onSaved, onCancel }) {
 /* ── Small helpers ────────────────────────────────────────── */
 function Section({ title, onEdit, children }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6">
+    <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 p-6 shadow-ambient-sm">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-gray-900">{title}</h2>
-        <button onClick={onEdit} className="text-xs text-blue-600 hover:underline">Edit</button>
+        <h2 className="font-semibold text-on-surface">{title}</h2>
+        <button onClick={onEdit} className="text-xs text-primary hover:underline">Edit</button>
       </div>
       {children}
     </div>
@@ -471,8 +650,8 @@ function Section({ title, onEdit, children }) {
 
 function FormSection({ title, children }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6">
-      <h2 className="font-semibold text-gray-900 mb-4">{title}</h2>
+    <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 p-6 shadow-ambient-sm">
+      <h2 className="font-semibold text-on-surface mb-4">{title}</h2>
       {children}
     </div>
   );
@@ -481,21 +660,96 @@ function FormSection({ title, children }) {
 function InfoRow({ label, value }) {
   if (!value && value !== 0) return null;
   return (
-    <div className="flex justify-between items-start py-2 px-1 border-b border-gray-50">
-      <span className="text-gray-500 text-sm shrink-0 mr-4">{label}</span>
-      <span className="text-gray-900 text-sm font-medium text-right break-all">{value}</span>
+    <div className="flex justify-between items-start py-2 px-1 border-b border-outline-variant/10">
+      <span className="text-on-surface-variant text-sm shrink-0 mr-4">{label}</span>
+      <span className="text-on-surface text-sm font-medium text-right break-all">{value}</span>
     </div>
   );
 }
 
 function Label({ children }) {
-  return <label className="block text-sm font-medium text-gray-700 mb-1">{children}</label>;
+  return <label className="block text-sm font-semibold text-on-surface mb-1.5">{children}</label>;
 }
 
 function Err({ children }) {
-  return <p className="text-xs text-red-600 mt-1">{children}</p>;
+  return <p className="text-xs text-error mt-1.5">{children}</p>;
 }
 
 function input() {
-  return "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+  return "w-full rounded-xl bg-surface-container-low border border-outline-variant/30 px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary";
 }
+
+ProfileView.propTypes = {
+  profile: PropTypes.shape({
+    bio: PropTypes.string,
+    phone: PropTypes.string,
+    location: PropTypes.string,
+    years_of_experience: PropTypes.number,
+    resume_url: PropTypes.string,
+    linkedin_url: PropTypes.string,
+    github_url: PropTypes.string,
+    skills: PropTypes.arrayOf(PropTypes.string),
+    experience: PropTypes.arrayOf(
+      PropTypes.shape({
+        role: PropTypes.string,
+        company: PropTypes.string,
+        start_year: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        end_year: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        description: PropTypes.string,
+      })
+    ),
+    projects: PropTypes.arrayOf(
+      PropTypes.shape({
+        name: PropTypes.string,
+        url: PropTypes.string,
+        description: PropTypes.string,
+      })
+    ),
+  }).isRequired,
+  onEdit: PropTypes.func.isRequired,
+};
+
+ProfileEditForm.propTypes = {
+  profile: PropTypes.shape({
+    bio: PropTypes.string,
+    phone: PropTypes.string,
+    location: PropTypes.string,
+    resume_url: PropTypes.string,
+    linkedin_url: PropTypes.string,
+    github_url: PropTypes.string,
+    years_of_experience: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    skills: PropTypes.arrayOf(PropTypes.string),
+    experience: PropTypes.arrayOf(PropTypes.object),
+    projects: PropTypes.arrayOf(PropTypes.object),
+  }).isRequired,
+  onSaved: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+};
+
+Section.propTypes = {
+  title: PropTypes.string.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  children: PropTypes.node.isRequired,
+};
+
+FormSection.propTypes = {
+  title: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
+};
+
+InfoRow.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.node]),
+};
+
+InfoRow.defaultProps = {
+  value: null,
+};
+
+Label.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+
+Err.propTypes = {
+  children: PropTypes.node.isRequired,
+};

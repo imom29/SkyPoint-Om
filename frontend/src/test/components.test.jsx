@@ -14,22 +14,22 @@ describe("Badge", () => {
   it("renders label with correct class for accepted status", () => {
     const { container } = render(<Badge value="accepted" label="Accepted" />);
     expect(screen.getByText("Accepted")).toBeInTheDocument();
-    expect(container.firstChild).toHaveClass("bg-green-100");
+    expect(container.firstChild).toHaveClass("bg-tertiary-fixed-dim/40");
   });
 
   it("renders correct class for rejected status", () => {
     const { container } = render(<Badge value="rejected" label="Rejected" />);
-    expect(container.firstChild).toHaveClass("bg-red-100");
+    expect(container.firstChild).toHaveClass("bg-error-container/40");
   });
 
   it("renders correct class for pending status", () => {
     const { container } = render(<Badge value="pending" label="Pending" />);
-    expect(container.firstChild).toHaveClass("bg-yellow-100");
+    expect(container.firstChild).toHaveClass("bg-on-secondary-fixed-variant/10");
   });
 
   it("renders correct class for full_time job type", () => {
     const { container } = render(<Badge value="full_time" label="Full Time" />);
-    expect(container.firstChild).toHaveClass("bg-blue-100");
+    expect(container.firstChild).toHaveClass("bg-secondary-container");
   });
 });
 

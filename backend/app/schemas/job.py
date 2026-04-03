@@ -81,6 +81,9 @@ class JobOut(BaseModel):
     is_active: bool
     posted_by: UserOut
     application_count: int = 0
+    pending_count: int = 0
+    accepted_count: int = 0
+    rejected_count: int = 0
     created_at: datetime
     updated_at: datetime
 

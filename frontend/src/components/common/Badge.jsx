@@ -1,19 +1,26 @@
+import PropTypes from "prop-types";
+
 const VARIANTS = {
   // job types
-  full_time: "bg-blue-100 text-blue-700",
-  part_time: "bg-purple-100 text-purple-700",
-  contract: "bg-orange-100 text-orange-700",
+  full_time: "bg-secondary-container text-primary",
+  part_time: "bg-secondary-container text-primary",
+  contract: "bg-secondary-container text-primary",
   // application statuses
-  pending: "bg-yellow-100 text-yellow-700",
-  accepted: "bg-green-100 text-green-700",
-  rejected: "bg-red-100 text-red-700",
+  pending: "bg-on-secondary-fixed-variant/10 text-on-secondary-fixed-variant",
+  accepted: "bg-tertiary-fixed-dim/40 text-on-tertiary-fixed-variant",
+  rejected: "bg-error-container/40 text-error",
 };
 
 export default function Badge({ value, label }) {
-  const cls = VARIANTS[value] || "bg-gray-100 text-gray-700";
+  const cls = VARIANTS[value] || "bg-surface-container-high text-on-surface-variant";
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase ${cls}`}>
       {label || value}
     </span>
   );
 }
+
+Badge.propTypes = {
+  value: PropTypes.string.isRequired,
+  label: PropTypes.string,
+};
